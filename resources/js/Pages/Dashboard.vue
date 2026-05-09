@@ -1,12 +1,10 @@
 <script setup>
+import AppHeader from '@/Components/AppHeader.vue'
+import DriveTimeWidget from '@/Components/DriveTimeWidget.vue'
 import { computed } from 'vue'
 
 const props = defineProps({
     vehicles: {
-        type: Array,
-        default: () => []
-    },
-    recentInspections: {
         type: Array,
         default: () => []
     }
@@ -24,47 +22,19 @@ const availableVehicles = computed(() => {
     })
 })
 
-function formatSubmittedAt(value) {
-    if (!value) {
-        return 'Not available'
-    }
+const maintenanceVehicles = computed(() => {
+    return props.vehicles.filter(vehicle => {
+        const status = String(vehicle.status).toLowerCase()
 
-    return new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-    }).format(new Date(value))
-}
+        return status === 'maintenance required' || status === 'needs maintenance'
+    })
+})
+
 </script>
 
 <template>
     <div>
-        <header class="bg-gray-200 px-6 py-5">
-            <div class="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-4">
-                    <img
-                        src="/images/shipping-saint-logo.png"
-                        alt="Shipping Saint"
-                        class="h-14 w-auto"
-                    />
-                    <h1 class="text-3xl font-semibold">Vehicle Dashboard</h1>
-                </div>
-
-                <nav class="grid gap-3 sm:grid-cols-4">
-                    <a href="/dashboard" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Home
-                    </a>
-                    <a href="/vehicles" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Manage Vehicles
-                    </a>
-                    <a href="/inspections/pre-trip" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Pre Trip Inspection
-                    </a>
-                    <a href="/inspections/post-trip" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Post Trip Inspection
-                    </a>
-                </nav>
-            </div>
-        </header>
+        <AppHeader title="Vehicle Dashboard" />
 
         <main class="mx-auto max-w-6xl p-6">
         <div class="mb-8 grid gap-6 md:grid-cols-2">
@@ -97,20 +67,24 @@ function formatSubmittedAt(value) {
             </section>
         </div>
 
-        <h2 class="mb-3 text-2xl font-semibold">Recent Inspections</h2>
+        <section class="mx-auto mb-8 max-w-xl rounded-lg border bg-yellow-50 p-4">
+            <h2 class="mb-4 text-center text-2xl font-semibold">Needs Maintenance</h2>
 
-        <div class="space-y-3">
-            <div v-for="inspection in recentInspections" :key="inspection.id" class="rounded-lg border p-4">
-                <div>{{ inspection.inspection_type }}</div>
-                <div>Submitted: {{ formatSubmittedAt(inspection.created_at) }}</div>
-                <div>Vehicle: {{ inspection.vehicle?.name }}</div>
-                <div>Driver: {{ inspection.driver_name }}</div>
-                <div>Starting Mileage: {{ inspection.starting_mileage }}</div>
-                <div v-if="inspection.ending_mileage">
-                    Ending Mileage: {{ inspection.ending_mileage }}
+            <div v-if="maintenanceVehicles.length" class="space-y-3">
+                <div v-for="vehicle in maintenanceVehicles" :key="vehicle.id" class="rounded-lg border p-4">
+                    <div class="text-xl font-semibold">{{ vehicle.name }}</div>
+                    <div>Mileage: {{ vehicle.current_mileage }}</div>
+                    <div v-if="vehicle.required_maintenance_mileage">
+                        Required Maintenance Mileage: {{ vehicle.required_maintenance_mileage }}
+                    </div>
+                    <div>Status: {{ vehicle.status }}</div>
                 </div>
             </div>
-        </div>
+
+            <p v-else class="text-center">No vehicles need maintenance.</p>
+        </section>
+
+        <DriveTimeWidget />
         </main>
     </div>
 </template>

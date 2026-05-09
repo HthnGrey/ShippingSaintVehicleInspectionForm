@@ -10,6 +10,7 @@ class Vehicle extends Model
         'name',
         'plate_number',
         'current_mileage',
+        'required_maintenance_mileage',
         'status',
         'notes',
     ];

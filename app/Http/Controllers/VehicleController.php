@@ -21,10 +21,13 @@ class VehicleController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'plate_number' => ['nullable', 'string', 'max:255'],
             'current_mileage' => ['required', 'integer', 'min:0'],
+            'required_maintenance_mileage' => ['required', 'integer', 'gte:current_mileage'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        $data['status'] = 'Available';
+        $data['status'] = $data['current_mileage'] >= $data['required_maintenance_mileage']
+            ? 'Maintenance Required'
+            : 'Available';
 
         Vehicle::create($data);
 

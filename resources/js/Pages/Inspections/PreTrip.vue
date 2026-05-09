@@ -1,9 +1,13 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3'
+import AppHeader from '@/Components/AppHeader.vue'
+import InputError from '@/Components/InputError.vue'
+import { useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
     vehicles: Array
 })
+
+const fuelLevels = ['Empty', '1/4', '1/2', '3/4', 'Full']
 
 const form = useForm({
     vehicle_id: '',
@@ -31,52 +35,36 @@ function vehicleChanged() {
 function submit() {
     form.post(route('inspections.pre.store'))
 }
+
+function cannotPreTrip(vehicle) {
+    return vehicle.status === 'In Use'
+}
 </script>
 
 <template>
     <div>
-        <header class="bg-gray-200 px-6 py-5">
-            <div class="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-4">
-                    <img
-                        src="/images/shipping-saint-logo.png"
-                        alt="Shipping Saint"
-                        class="h-14 w-auto"
-                    />
-                    <h1 class="text-3xl font-semibold">Pre Trip Inspection</h1>
-                </div>
-
-                <nav class="grid gap-3 sm:grid-cols-4">
-                    <Link :href="route('dashboard')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Home
-                    </Link>
-                    <Link :href="route('vehicles.index')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Manage Vehicles
-                    </Link>
-                    <Link :href="route('inspections.pre')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Pre Trip Inspection
-                    </Link>
-                    <Link :href="route('inspections.post')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Post Trip Inspection
-                    </Link>
-                </nav>
-            </div>
-        </header>
+        <AppHeader title="Pre Trip Inspection" />
 
         <main class="mx-auto max-w-xl p-6">
         <form @submit.prevent="submit" class="space-y-4">
             <select v-model="form.vehicle_id" @change="vehicleChanged" class="w-full rounded border p-3">
                 <option value="">Select vehicle</option>
-                <option v-for="vehicle in vehicles" :key="vehicle.id" :value="vehicle.id">
+                <option v-for="vehicle in vehicles" :key="vehicle.id" :value="vehicle.id" :disabled="cannotPreTrip(vehicle)">
                     {{ vehicle.name }} | {{ vehicle.status }}
                 </option>
             </select>
+            <InputError :message="form.errors.vehicle_id" />
 
             <input v-model="form.driver_name" class="w-full rounded border p-3" placeholder="Driver name" />
 
             <input v-model="form.starting_mileage" type="number" readonly class="w-full rounded border bg-gray-100 p-3" />
 
-            <input v-model="form.fuel_level" class="w-full rounded border p-3" placeholder="Fuel level" />
+            <select v-model="form.fuel_level" class="w-full rounded border p-3">
+                <option value="">Select fuel level</option>
+                <option v-for="fuelLevel in fuelLevels" :key="fuelLevel" :value="fuelLevel">
+                    {{ fuelLevel }}
+                </option>
+            </select>
 
             <div class="grid grid-cols-3 gap-x-6 gap-y-3">
                 <label class="flex items-center gap-2"><input v-model="form.tires_ok" type="checkbox" /> Tires OK</label>

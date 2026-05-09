@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VehicleInspectionController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\WorkOrderController;
 
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -17,6 +18,15 @@ Route::get('/vehicles', [VehicleController::class, 'index'])
 
 Route::post('/vehicles', [VehicleController::class, 'store'])
     ->name('vehicles.store');
+
+Route::get('/work-orders', [WorkOrderController::class, 'index'])
+    ->name('work-orders.index');
+
+Route::post('/work-orders/{vehicle}/complete', [WorkOrderController::class, 'complete'])
+    ->name('work-orders.complete');
+
+Route::get('/inspections', [VehicleInspectionController::class, 'index'])
+    ->name('inspections.index');
 
 Route::get('/inspections/pre-trip', [VehicleInspectionController::class, 'createPreTrip'])
     ->name('inspections.pre');

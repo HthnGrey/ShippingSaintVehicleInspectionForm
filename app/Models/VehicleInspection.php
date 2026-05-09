@@ -8,6 +8,7 @@ class VehicleInspection extends Model
 {
     protected $fillable = [
         'vehicle_id',
+        'pre_trip_inspection_id',
         'inspection_type',
         'driver_name',
         'starting_mileage',
@@ -24,5 +25,15 @@ class VehicleInspection extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function preTrip()
+    {
+        return $this->belongsTo(VehicleInspection::class, 'pre_trip_inspection_id');
+    }
+
+    public function pairedPostTrip()
+    {
+        return $this->hasOne(VehicleInspection::class, 'pre_trip_inspection_id');
     }
 }

@@ -1,5 +1,6 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3'
+import AppHeader from '@/Components/AppHeader.vue'
+import { useForm } from '@inertiajs/vue3'
 
 defineProps({
     vehicles: Array
@@ -9,6 +10,7 @@ const form = useForm({
     name: '',
     plate_number: '',
     current_mileage: '',
+    required_maintenance_mileage: '',
     notes: ''
 })
 
@@ -21,33 +23,7 @@ function submit() {
 
 <template>
     <div>
-        <header class="bg-gray-200 px-6 py-5">
-            <div class="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-4">
-                    <img
-                        src="/images/shipping-saint-logo.png"
-                        alt="Shipping Saint"
-                        class="h-14 w-auto"
-                    />
-                    <h1 class="text-3xl font-semibold">Vehicles</h1>
-                </div>
-
-                <nav class="grid gap-3 sm:grid-cols-4">
-                    <Link :href="route('dashboard')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Home
-                    </Link>
-                    <Link :href="route('vehicles.index')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Manage Vehicles
-                    </Link>
-                    <Link :href="route('inspections.pre')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Pre Trip Inspection
-                    </Link>
-                    <Link :href="route('inspections.post')" class="rounded bg-white px-4 py-2 text-center text-sm font-medium shadow-sm">
-                        Post Trip Inspection
-                    </Link>
-                </nav>
-            </div>
-        </header>
+        <AppHeader title="Vehicles" />
 
         <main class="mx-auto max-w-5xl p-6">
         <form @submit.prevent="submit" class="mb-8 space-y-4 rounded-lg border p-4">
@@ -56,6 +32,8 @@ function submit() {
             <input v-model="form.plate_number" class="w-full rounded border p-2" placeholder="Plate number" />
 
             <input v-model="form.current_mileage" type="number" class="w-full rounded border p-2" placeholder="Current mileage" />
+
+            <input v-model="form.required_maintenance_mileage" type="number" class="w-full rounded border p-2" placeholder="Required maintenance mileage" />
 
             <textarea v-model="form.notes" class="w-full rounded border p-2" placeholder="Notes"></textarea>
 
@@ -69,6 +47,7 @@ function submit() {
                 <div class="text-xl font-semibold">{{ vehicle.name }}</div>
                 <div>Plate: {{ vehicle.plate_number || 'N/A' }}</div>
                 <div>Mileage: {{ vehicle.current_mileage }}</div>
+                <div>Required Maintenance Mileage: {{ vehicle.required_maintenance_mileage }}</div>
                 <div>Status: {{ vehicle.status }}</div>
             </div>
         </div>

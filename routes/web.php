@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VehicleInspectionController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\WorkOrderController;
@@ -24,6 +25,9 @@ Route::get('/work-orders', [WorkOrderController::class, 'index'])
 
 Route::post('/work-orders/{vehicle}/complete', [WorkOrderController::class, 'complete'])
     ->name('work-orders.complete');
+
+Route::get('/reports', [ReportController::class, 'index'])
+    ->name('reports.index');
 
 Route::get('/inspections', [VehicleInspectionController::class, 'index'])
     ->name('inspections.index');

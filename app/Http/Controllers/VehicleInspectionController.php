@@ -78,7 +78,7 @@ class VehicleInspectionController extends Controller
             'brakes_ok' => ['required', 'boolean'],
             'fluids_ok' => ['required', 'boolean'],
             'damage_found' => ['required', 'boolean'],
-            'damage_notes' => ['nullable', 'string'],
+            'damage_notes' => ['required_if:damage_found,true', 'nullable', 'string'],
         ]);
 
         $vehicle = $this->vehicleForInspection($data['vehicle_id'], 'Post Trip');
@@ -108,7 +108,7 @@ class VehicleInspectionController extends Controller
             ]);
         }
 
-        if ($inspectionType === 'Pre Trip' && $vehicle->status === 'Maintenance Required') {
+        if ($inspectionType === 'Pre Trip' && in_array($vehicle->status, ['Maintenance Required', 'Needs Maintenance'], true)) {
             throw ValidationException::withMessages([
                 'vehicle_id' => 'Maintenance must be completed before this vehicle can be used.',
             ]);
@@ -125,8 +125,8 @@ class VehicleInspectionController extends Controller
 
     private function statusAfterPostTrip(Vehicle $vehicle, array $data): string
     {
-        if ($data['damage_found']) {
-            return 'Needs Maintenance';
+        if ($this->postTripNeedsMaintenance($data)) {
+            return 'Maintenance Required';
         }
 
         if ($data['ending_mileage'] >= $vehicle->required_maintenance_mileage) {
@@ -134,6 +134,15 @@ class VehicleInspectionController extends Controller
         }
 
         return 'Available';
+    }
+
+    private function postTripNeedsMaintenance(array $data): bool
+    {
+        return $data['damage_found']
+            || ! $data['tires_ok']
+            || ! $data['lights_ok']
+            || ! $data['brakes_ok']
+            || ! $data['fluids_ok'];
     }
 
     private function preTripForPostTrip(Vehicle $vehicle): VehicleInspection

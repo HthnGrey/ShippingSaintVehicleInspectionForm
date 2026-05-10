@@ -32,6 +32,27 @@ class VehicleInspectionTest extends TestCase
         $this->assertSame('In Use', $vehicle->fresh()->status);
     }
 
+    public function test_pre_trip_inspection_cannot_be_created_for_vehicle_needs_maintenance(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'status' => 'Needs Maintenance',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->from(route('inspections.pre'))
+            ->post(route('inspections.pre.store'), [
+                ...$this->preTripPayload($vehicle),
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.pre'));
+        $response->assertSessionHasErrors('vehicle_id');
+        $this->assertSame(0, VehicleInspection::count());
+        $this->assertSame('Needs Maintenance', $vehicle->fresh()->status);
+    }
+
     public function test_post_trip_inspection_cannot_be_created_for_available_vehicle(): void
     {
         $vehicle = Vehicle::create([
@@ -126,6 +147,82 @@ class VehicleInspectionTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
         $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
+    }
+
+    public function test_post_trip_moves_vehicle_to_maintenance_required_when_a_checklist_item_fails(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'In Use',
+        ]);
+        VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post(route('inspections.post.store'), [
+                ...$this->postTripPayload($vehicle),
+                'tires_ok' => false,
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
+    }
+
+    public function test_post_trip_moves_vehicle_to_maintenance_required_when_damage_is_found(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'In Use',
+        ]);
+        VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post(route('inspections.post.store'), [
+                ...$this->postTripPayload($vehicle),
+                'damage_found' => true,
+                'damage_notes' => 'Rear door hinge is bent.',
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
+    }
+
+    public function test_post_trip_damage_notes_are_required_when_damage_is_found(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'In Use',
+        ]);
+        VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->from(route('inspections.post'))
+            ->post(route('inspections.post.store'), [
+                ...$this->postTripPayload($vehicle),
+                'damage_found' => true,
+                'damage_notes' => null,
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.post'));
+        $response->assertSessionHasErrors('damage_notes');
+        $this->assertSame('In Use', $vehicle->fresh()->status);
     }
 
     public function test_post_trip_inspection_requires_an_open_pre_trip(): void

@@ -1,3 +1,65 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+[data-theme='light'] body {
+    background: #f8fafc;
+}
+
+[data-theme='light'] .bg-slate-950,
+[data-theme='light'] .bg-slate-950\/70,
+[data-theme='light'] .bg-slate-950\/80,
+[data-theme='light'] .bg-slate-950\/95 {
+    background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .bg-slate-900,
+[data-theme='light'] .bg-slate-900\/80,
+[data-theme='light'] .bg-slate-900\/90 {
+    background-color: #ffffff !important;
+}
+
+[data-theme='light'] .bg-slate-800 {
+    background-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .border-slate-800,
+[data-theme='light'] .border-slate-800\/80,
+[data-theme='light'] .border-slate-700 {
+    border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .text-white,
+[data-theme='light'] .text-slate-100,
+[data-theme='light'] .text-slate-200 {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .text-slate-300,
+[data-theme='light'] .text-slate-400 {
+    color: #475569 !important;
+}
+
+[data-theme='light'] .text-slate-500 {
+    color: #64748b !important;
+}
+
+[data-theme='light'] .text-blue-100 {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .placeholder\:text-slate-500::placeholder {
+    color: #94a3b8 !important;
+}
+
+[data-theme='light'] .shadow-black\/20,
+[data-theme='light'] .shadow-black\/30,
+[data-theme='light'] .shadow-black\/40 {
+    --tw-shadow-color: rgb(15 23 42 / 0.12) !important;
+}
+
+[data-theme='light'] .bg-blue-500.text-white,
+[data-theme='light'] .bg-blue-600.text-white,
+[data-theme='light'] .bg-red-600.text-white {
+    color: #ffffff !important;
+}

@@ -1,17 +1,20 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
 import InputError from '@/Components/InputError.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const props = defineProps({
     vehicles: Array
 })
 
 const fuelLevels = ['Empty', '1/4', '1/2', '3/4', 'Full']
+const page = usePage()
+const driverName = computed(() => page.props.auth?.user?.name || '')
 
 const form = useForm({
     vehicle_id: '',
-    driver_name: '',
+    driver_name: driverName.value,
     starting_mileage: '',
     fuel_level: '',
     tires_ok: false,
@@ -33,6 +36,7 @@ function vehicleChanged() {
 }
 
 function submit() {
+    form.driver_name = driverName.value
     form.post(route('inspections.pre.store'))
 }
 
@@ -55,7 +59,10 @@ function cannotPreTrip(vehicle) {
             </select>
             <InputError :message="form.errors.vehicle_id" />
 
-            <input v-model="form.driver_name" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-slate-100 placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-400" placeholder="Driver name" />
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-3 text-slate-300">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Driver</div>
+                <div class="mt-1 text-base font-semibold text-slate-100">{{ driverName }}</div>
+            </div>
 
             <input v-model="form.starting_mileage" type="number" readonly class="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-slate-300" />
 

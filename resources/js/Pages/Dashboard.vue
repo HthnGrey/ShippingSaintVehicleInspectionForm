@@ -1,7 +1,7 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
 import DriveTimeWidget from '@/Components/DriveTimeWidget.vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -10,6 +10,9 @@ const props = defineProps({
         default: () => []
     }
 })
+
+const page = usePage()
+const permissions = computed(() => page.props.auth?.permissions || {})
 
 const inUseVehicles = computed(() => props.vehicles.filter(vehicle => String(vehicle.status).toLowerCase() === 'in use'))
 const availableVehicles = computed(() => props.vehicles.filter(vehicle => String(vehicle.status).toLowerCase() === 'available'))
@@ -185,7 +188,7 @@ function vehicleAccent(status) {
                         <h2 class="text-xl font-semibold text-white">Available Vehicles</h2>
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-green-300">{{ availableVehicles.length }} ready</span>
-                            <Link :href="route('inspections.pre')" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
+                            <Link v-if="permissions.createInspections" :href="route('inspections.pre')" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
                                 Start Inspection
                             </Link>
                         </div>
@@ -214,7 +217,7 @@ function vehicleAccent(status) {
                                     </dl>
                                 </div>
                                 <div class="flex gap-2">
-                                    <Link :href="route('vehicles.index')" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
+                                    <Link v-if="permissions.viewVehicles" :href="route('vehicles.index')" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
                                         View
                                     </Link>
                                 </div>
@@ -242,10 +245,10 @@ function vehicleAccent(status) {
                                 <div class="flex flex-col gap-3 sm:items-end">
                                     <span class="rounded-full border px-2 py-1 text-xs font-semibold" :class="vehicleAccent(vehicle.status)">{{ vehicle.status }}</span>
                                     <div class="flex gap-2">
-                                        <Link :href="route('vehicles.index')" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
+                                        <Link v-if="permissions.viewVehicles" :href="route('vehicles.index')" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
                                             View
                                         </Link>
-                                        <Link :href="route('inspections.post')" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
+                                        <Link v-if="permissions.createInspections" :href="route('inspections.post')" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
                                             Start Post Inspection
                                         </Link>
                                     </div>

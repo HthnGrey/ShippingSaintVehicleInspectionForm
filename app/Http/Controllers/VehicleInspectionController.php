@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -31,7 +33,6 @@ class VehicleInspectionController extends Controller
     {
         $data = $request->validate([
             'vehicle_id' => ['required', 'exists:vehicles,id'],
-            'driver_name' => ['required', 'string', 'max:255'],
             'starting_mileage' => ['required', 'integer', 'min:0'],
             'fuel_level' => ['nullable', 'string', 'max:255'],
             'tires_ok' => ['required', 'boolean'],
@@ -45,8 +46,11 @@ class VehicleInspectionController extends Controller
         $vehicle = $this->vehicleForInspection($data['vehicle_id'], 'Pre Trip');
 
         $data['inspection_type'] = 'Pre Trip';
+        $data['driver_name'] = $request->user()->name;
 
-        VehicleInspection::create($data);
+        $inspection = VehicleInspection::create($data);
+
+        AuditLog::record('created', $inspection, "Created pre trip inspection for {$vehicle->name}");
 
         $vehicle->update([
             'status' => $data['damage_found'] ? 'Needs Maintenance' : 'In Use',
@@ -70,7 +74,6 @@ class VehicleInspectionController extends Controller
     {
         $data = $request->validate([
             'vehicle_id' => ['required', 'exists:vehicles,id'],
-            'driver_name' => ['required', 'string', 'max:255'],
             'starting_mileage' => ['required', 'integer', 'min:0'],
             'ending_mileage' => ['required', 'integer', 'gte:starting_mileage'],
             'fuel_level' => ['nullable', 'string', 'max:255'],
@@ -80,6 +83,12 @@ class VehicleInspectionController extends Controller
             'fluids_ok' => ['required', 'boolean'],
             'damage_found' => ['required', 'boolean'],
             'damage_notes' => ['required_if:damage_found,true', 'nullable', 'string'],
+            'damage_photo' => [
+                Rule::requiredIf(fn () => $request->boolean('damage_found')),
+                'nullable',
+                'image',
+                'max:5120',
+            ],
         ]);
 
         $vehicle = $this->vehicleForInspection($data['vehicle_id'], 'Post Trip');
@@ -87,9 +96,20 @@ class VehicleInspectionController extends Controller
 
         $data['inspection_type'] = 'Post Trip';
         $data['pre_trip_inspection_id'] = $preTrip->id;
-        $data['driver_name'] = $preTrip->driver_name;
+        $data['driver_name'] = $request->user()->name;
 
-        VehicleInspection::create($data);
+        if ($request->hasFile('damage_photo')) {
+            $data['damage_photo_path'] = $request->file('damage_photo')->store('damage-photos', 'public');
+        }
+
+        unset($data['damage_photo']);
+
+        $inspection = VehicleInspection::create($data);
+
+        AuditLog::record('created', $inspection, "Created post trip inspection for {$vehicle->name}", [
+            'damage_found' => (bool) $inspection->damage_found,
+            'damage_photo_path' => $inspection->damage_photo_path,
+        ]);
 
         $vehicle->update([
             'current_mileage' => $data['ending_mileage'],
@@ -118,6 +138,10 @@ class VehicleInspectionController extends Controller
 
         $inspection->update($data);
 
+        AuditLog::record('updated', $inspection, "Updated {$inspection->inspection_type} inspection", [
+            'inspection_id' => $inspection->id,
+        ]);
+
         $this->syncVehicleAfterInspectionChange($inspection->fresh('vehicle'));
 
         return redirect()->route('inspections.index');
@@ -128,6 +152,11 @@ class VehicleInspectionController extends Controller
         $vehicle = $inspection->vehicle;
 
         $inspection->delete();
+
+        AuditLog::record('deleted', $inspection, "Deleted {$inspection->inspection_type} inspection", [
+            'inspection_id' => $inspection->id,
+            'vehicle_id' => $vehicle?->id,
+        ]);
 
         if ($vehicle) {
             $this->syncVehicleAfterInspectionDelete($vehicle);

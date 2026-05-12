@@ -1,7 +1,7 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
 import InputError from '@/Components/InputError.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -13,10 +13,12 @@ const props = defineProps({
 })
 
 const fuelLevels = ['Empty', '1/4', '1/2', '3/4', 'Full']
+const page = usePage()
+const driverName = computed(() => page.props.auth?.user?.name || '')
 
 const form = useForm({
     vehicle_id: '',
-    driver_name: '',
+    driver_name: driverName.value,
     starting_mileage: '',
     ending_mileage: '',
     fuel_level: '',
@@ -25,7 +27,8 @@ const form = useForm({
     brakes_ok: false,
     fluids_ok: false,
     damage_found: false,
-    damage_notes: ''
+    damage_notes: '',
+    damage_photo: null,
 })
 
 const selectedPreTrip = computed(() => {
@@ -43,7 +46,6 @@ function vehicleChanged() {
     const preTrip = selectedPreTrip.value
 
     if (preTrip) {
-        form.driver_name = preTrip.driver_name
         form.starting_mileage = preTrip.starting_mileage
         form.fuel_level = preTrip.fuel_level ?? ''
         return
@@ -55,7 +57,10 @@ function vehicleChanged() {
 }
 
 function submit() {
-    form.post(route('inspections.post.store'))
+    form.driver_name = driverName.value
+    form.post(route('inspections.post.store'), {
+        forceFormData: true,
+    })
 }
 
 function cannotPostTrip(vehicle) {
@@ -97,13 +102,10 @@ function formatSubmittedAt(value) {
                 <div v-if="selectedPreTrip.damage_notes">Damage Notes: {{ selectedPreTrip.damage_notes }}</div>
             </section>
 
-            <input
-                v-model="form.driver_name"
-                :readonly="Boolean(selectedPreTrip)"
-                class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-slate-100 placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-400"
-                :class="{ 'bg-slate-800 text-slate-300': selectedPreTrip }"
-                placeholder="Driver name"
-            />
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-3 text-slate-300">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Driver</div>
+                <div class="mt-1 text-base font-semibold text-slate-100">{{ driverName }}</div>
+            </div>
 
             <input v-model="form.starting_mileage" type="number" readonly class="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-slate-300" />
 
@@ -131,6 +133,18 @@ function formatSubmittedAt(value) {
                 :placeholder="form.damage_found ? 'Damage notes required' : 'Damage notes'"
             ></textarea>
             <InputError :message="form.errors.damage_notes" />
+
+            <div v-if="form.damage_found">
+                <label class="mb-2 block text-sm font-medium text-slate-300" for="damage_photo">Damage Photo</label>
+                <input
+                    id="damage_photo"
+                    type="file"
+                    accept="image/*"
+                    class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+                    @input="form.damage_photo = $event.target.files[0]"
+                />
+                <InputError class="mt-2" :message="form.errors.damage_photo" />
+            </div>
 
             <button class="w-full rounded-xl bg-blue-600 p-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
                 Submit Post Trip

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MaintenanceReport;
+use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -11,6 +12,20 @@ use Tests\TestCase;
 class WorkOrderTest extends TestCase
 {
     use RefreshDatabase;
+
+    private User $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create([
+            'name' => 'Fleet Admin',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($this->user);
+    }
 
     public function test_completing_a_work_order_records_a_maintenance_report(): void
     {
@@ -24,7 +39,7 @@ class WorkOrderTest extends TestCase
 
         $response = $this->withSession(['_token' => 'test-token'])
             ->post(route('work-orders.complete', $vehicle), [
-                'completed_by' => 'Jane Mechanic',
+                'completed_by' => 'Spoofed Mechanic',
                 'maintenance_completed' => 'Changed oil and replaced front brake pads.',
                 '_token' => 'test-token',
             ]);
@@ -33,7 +48,7 @@ class WorkOrderTest extends TestCase
         $this->assertSame('Available', $vehicle->fresh()->status);
         $this->assertDatabaseHas('maintenance_reports', [
             'vehicle_id' => $vehicle->id,
-            'completed_by' => 'Jane Mechanic',
+            'completed_by' => $this->user->name,
             'maintenance_completed' => 'Changed oil and replaced front brake pads.',
             'completed_at' => '2026-05-10 14:30:00',
         ]);
@@ -55,7 +70,7 @@ class WorkOrderTest extends TestCase
             ]);
 
         $response->assertRedirect(route('work-orders.index'));
-        $response->assertSessionHasErrors(['completed_by', 'maintenance_completed']);
+        $response->assertSessionHasErrors(['maintenance_completed']);
         $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
         $this->assertSame(0, MaintenanceReport::count());
     }

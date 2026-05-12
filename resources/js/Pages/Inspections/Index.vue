@@ -46,7 +46,10 @@ function deleteInspection(inspection) {
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 class="text-2xl font-semibold text-white">Recent Inspections</h2>
 
-                <div class="grid gap-3 sm:grid-cols-2">
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <a :href="route('exports.inspections')" class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-slate-100 transition hover:border-blue-400">
+                        Export CSV
+                    </a>
                     <Link :href="route('inspections.pre')" class="rounded-xl bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">
                         New Pre Trip
                     </Link>
@@ -103,6 +106,7 @@ function deleteInspection(inspection) {
                             <div>Ending Mileage: {{ inspection.paired_post_trip.ending_mileage }}</div>
                             <div v-if="inspection.paired_post_trip.fuel_level">Fuel Level: {{ inspection.paired_post_trip.fuel_level }}</div>
                             <div v-if="inspection.paired_post_trip.damage_notes">Damage Notes: {{ inspection.paired_post_trip.damage_notes }}</div>
+                            <a v-if="inspection.paired_post_trip.damage_photo_url" :href="inspection.paired_post_trip.damage_photo_url" target="_blank" class="mt-2 inline-block text-sm font-semibold text-blue-300 hover:text-blue-200">View damage photo</a>
                         </section>
 
                         <section v-else class="border-t border-slate-800 pt-4 text-slate-500 md:border-l md:border-t-0 md:pl-4 md:pt-0">

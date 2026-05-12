@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class VehicleInspection extends Model
 {
@@ -20,6 +22,11 @@ class VehicleInspection extends Model
         'fluids_ok',
         'damage_found',
         'damage_notes',
+        'damage_photo_path',
+    ];
+
+    protected $appends = [
+        'damage_photo_url',
     ];
 
     public function vehicle()
@@ -35,5 +42,12 @@ class VehicleInspection extends Model
     public function pairedPostTrip()
     {
         return $this->hasOne(VehicleInspection::class, 'pre_trip_inspection_id');
+    }
+
+    protected function damagePhotoUrl(): Attribute
+    {
+        return Attribute::get(fn () => $this->damage_photo_path
+            ? Storage::disk('public')->url($this->damage_photo_path)
+            : null);
     }
 }

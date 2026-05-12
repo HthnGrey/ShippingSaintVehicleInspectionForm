@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\MaintenanceReport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,11 +30,19 @@ class ReportController extends Controller
 
         $maintenanceReport->update($data);
 
+        AuditLog::record('updated', $maintenanceReport, 'Updated maintenance report', [
+            'report_id' => $maintenanceReport->id,
+        ]);
+
         return redirect()->route('reports.index');
     }
 
     public function destroy(MaintenanceReport $maintenanceReport): RedirectResponse
     {
+        AuditLog::record('deleted', $maintenanceReport, 'Deleted maintenance report', [
+            'report_id' => $maintenanceReport->id,
+        ]);
+
         $maintenanceReport->delete();
 
         return redirect()->route('reports.index');

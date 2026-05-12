@@ -1,6 +1,7 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'
-import { onMounted, ref, watch } from 'vue'
+import Dropdown from '@/Components/Dropdown.vue'
+import { Link, usePage } from '@inertiajs/vue3'
+import { computed, onMounted, ref, watch } from 'vue'
 
 defineProps({
     title: {
@@ -9,13 +10,20 @@ defineProps({
     }
 })
 
-const navigationItems = [
-    { label: 'Dashboard', icon: '🚚', routeName: 'dashboard', active: 'dashboard' },
-    { label: 'Vehicles', icon: '🚐', routeName: 'vehicles.index', active: 'vehicles.*' },
-    { label: 'Work Orders', icon: '🛠', routeName: 'work-orders.index', active: 'work-orders.*' },
-    { label: 'Inspections', icon: '📋', routeName: 'inspections.index', active: 'inspections.*' },
-    { label: 'Reports', icon: '📊', routeName: 'reports.index', active: 'reports.*' },
-]
+const page = usePage()
+const permissions = computed(() => page.props.auth?.permissions || {})
+
+const navigationItems = computed(() => [
+    { label: 'Dashboard', icon: 'D', routeName: 'dashboard', active: 'dashboard', visible: permissions.value.viewDashboard },
+    { label: 'Vehicles', icon: 'V', routeName: 'vehicles.index', active: 'vehicles.*', visible: permissions.value.viewVehicles },
+    { label: 'Work Orders', icon: 'W', routeName: 'work-orders.index', active: 'work-orders.*', visible: permissions.value.manageWorkOrders },
+    { label: 'Driver Mileage', icon: 'M', routeName: 'driver-mileage.index', active: 'driver-mileage.*', visible: permissions.value.viewDriverMileage },
+    { label: 'Driver History', icon: 'H', routeName: 'driver-history.index', active: 'driver-history.*', visible: permissions.value.viewDriverHistory },
+    { label: 'Inspections', icon: 'I', routeName: 'inspections.index', active: 'inspections.*', visible: permissions.value.viewInspections },
+    { label: 'Reports', icon: 'R', routeName: 'reports.index', active: 'reports.*', visible: permissions.value.viewReports },
+    { label: 'Audit Logs', icon: 'A', routeName: 'audit-logs.index', active: 'audit-logs.*', visible: permissions.value.viewAuditLogs },
+    { label: 'Users', icon: 'U', routeName: 'users.index', active: 'users.*', visible: permissions.value.manageUsers },
+].filter(item => item.visible))
 
 const isDarkMode = ref(true)
 
@@ -38,8 +46,8 @@ watch(isDarkMode, value => {
 <template>
     <aside class="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-slate-800/80 bg-slate-950 px-5 py-6 text-slate-100 shadow-2xl shadow-black/30 lg:flex lg:flex-col">
         <Link :href="route('dashboard')" class="mb-8 flex items-center gap-3">
-            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/15 text-xl shadow-lg shadow-blue-500/10">
-                🚚
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/15 text-sm font-bold shadow-lg shadow-blue-500/10">
+                SS
             </span>
             <span>
                 <span class="block text-sm font-semibold uppercase tracking-wider text-blue-300">Shipping Saint</span>
@@ -55,10 +63,9 @@ watch(isDarkMode, value => {
                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-slate-800 hover:text-white"
                 :class="route().current(item.active) ? 'border border-blue-400/30 bg-blue-500/15 text-blue-100 shadow-lg shadow-blue-500/10' : 'text-slate-400'"
             >
-                <span class="text-lg">{{ item.icon }}</span>
+                <span class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-xs font-bold">{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
             </Link>
-
         </nav>
 
         <div class="mt-auto space-y-4">
@@ -81,14 +88,6 @@ watch(isDarkMode, value => {
                 </div>
                 <div class="text-xs text-slate-400">{{ isDarkMode ? 'Dark mode active' : 'Light mode active' }}</div>
             </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
-            <div class="text-sm font-semibold text-white">Fleet Health</div>
-            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
-                <div class="h-full w-4/5 rounded-full bg-gradient-to-r from-green-400 to-blue-500"></div>
-            </div>
-            <div class="mt-2 text-xs text-slate-400">Live readiness score</div>
-            </div>
         </div>
     </aside>
 
@@ -100,19 +99,31 @@ watch(isDarkMode, value => {
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div class="flex items-center gap-3">
-                    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition hover:border-blue-400 hover:text-white">
-                        🔔
-                    </button>
-                    <div class="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-sm font-semibold text-white">
-                            {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
-                        </span>
-                        <span class="hidden text-sm font-medium text-slate-200 sm:block">
-                            {{ $page.props.auth?.user?.name || 'Fleet User' }}
-                        </span>
-                    </div>
-                </div>
+                <Dropdown align="right" width="48" contentClasses="border border-slate-700 bg-slate-900 py-1">
+                    <template #trigger>
+                        <button type="button" class="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 transition hover:border-blue-400">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-sm font-semibold text-white">
+                                {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
+                            </span>
+                            <span class="hidden text-sm font-medium text-slate-200 sm:block">
+                                {{ $page.props.auth?.user?.name || 'Fleet User' }}
+                            </span>
+                            <span class="hidden rounded-full border border-slate-700 px-2 py-1 text-xs font-semibold uppercase text-slate-400 sm:block">
+                                {{ $page.props.auth?.user?.role || 'driver' }}
+                            </span>
+                            <span class="text-xs text-slate-500">v</span>
+                        </button>
+                    </template>
+
+                    <template #content>
+                        <Link :href="route('profile.edit')" class="block px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800 hover:text-white">
+                            Account Settings
+                        </Link>
+                        <Link :href="route('logout')" method="post" as="button" class="block w-full px-4 py-2 text-left text-sm text-slate-200 transition hover:bg-slate-800 hover:text-white">
+                            Log Out
+                        </Link>
+                    </template>
+                </Dropdown>
             </div>
         </div>
 

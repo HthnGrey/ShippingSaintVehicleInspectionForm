@@ -1,7 +1,7 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
-import { router, useForm } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { router, useForm, usePage } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
 
 defineProps({
     maintenanceReports: {
@@ -11,6 +11,8 @@ defineProps({
 })
 
 const selectedReport = ref(null)
+const page = usePage()
+const permissions = computed(() => page.props.auth?.permissions || {})
 const form = useForm({
     completed_by: '',
     maintenance_completed: '',
@@ -89,6 +91,9 @@ function deleteReport(report) {
                     <span class="rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-200">
                         {{ maintenanceReports.length }} entries
                     </span>
+                    <a :href="route('exports.reports')" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
+                        Export CSV
+                    </a>
                 </div>
 
                 <div v-if="maintenanceReports.length" class="space-y-4">
@@ -109,12 +114,14 @@ function deleteReport(report) {
                             </div>
 
                             <div class="flex flex-wrap gap-2">
-                                <button type="button" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white" @click="openEditReport(report)">
-                                    Edit
-                                </button>
-                                <button type="button" class="rounded-lg border border-red-400/40 px-3 py-2 text-sm font-semibold text-red-200 transition hover:border-red-300 hover:text-white" @click="deleteReport(report)">
-                                    Remove
-                                </button>
+                                <template v-if="permissions.manageReports">
+                                    <button type="button" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white" @click="openEditReport(report)">
+                                        Edit
+                                    </button>
+                                    <button type="button" class="rounded-lg border border-red-400/40 px-3 py-2 text-sm font-semibold text-red-200 transition hover:border-red-300 hover:text-white" @click="deleteReport(report)">
+                                        Remove
+                                    </button>
+                                </template>
                                 <div class="rounded-full border border-green-400/30 bg-green-500/10 px-3 py-2 text-sm font-semibold text-green-200">
                                     Completed
                                 </div>
@@ -134,7 +141,7 @@ function deleteReport(report) {
             </section>
         </main>
 
-        <div v-if="selectedReport" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm">
+        <div v-if="selectedReport && permissions.manageReports" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm">
             <div class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl shadow-black/40">
                 <div class="mb-5 flex items-start justify-between gap-4">
                     <div>

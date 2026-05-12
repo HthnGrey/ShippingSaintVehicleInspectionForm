@@ -2,14 +2,31 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class VehicleInspectionTest extends TestCase
 {
     use RefreshDatabase;
+
+    private User $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create([
+            'name' => 'Fleet Admin',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($this->user);
+    }
 
     public function test_pre_trip_inspection_cannot_be_created_for_vehicle_in_use(): void
     {
@@ -99,7 +116,29 @@ class VehicleInspectionTest extends TestCase
         $this->assertSame('Available', $vehicle->fresh()->status);
     }
 
-    public function test_post_trip_driver_name_comes_from_paired_pre_trip(): void
+    public function test_pre_trip_driver_name_comes_from_authenticated_user(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'Available',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post(route('inspections.pre.store'), [
+                ...$this->preTripPayload($vehicle),
+                'driver_name' => 'Spoofed Driver',
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('dashboard'));
+
+        $preTrip = VehicleInspection::where('inspection_type', 'Pre Trip')->firstOrFail();
+        $this->assertSame($this->user->name, $preTrip->driver_name);
+    }
+
+    public function test_post_trip_driver_name_comes_from_authenticated_user(): void
     {
         $vehicle = Vehicle::create([
             'name' => 'Truck 1',
@@ -122,7 +161,7 @@ class VehicleInspectionTest extends TestCase
         $response->assertRedirect(route('dashboard'));
 
         $postTrip = VehicleInspection::where('inspection_type', 'Post Trip')->firstOrFail();
-        $this->assertSame('Pre Trip Driver', $postTrip->driver_name);
+        $this->assertSame($this->user->name, $postTrip->driver_name);
     }
 
     public function test_post_trip_moves_vehicle_to_maintenance_required_when_mileage_threshold_is_reached(): void
@@ -175,6 +214,7 @@ class VehicleInspectionTest extends TestCase
 
     public function test_post_trip_moves_vehicle_to_maintenance_required_when_damage_is_found(): void
     {
+        Storage::fake('public');
         $vehicle = Vehicle::create([
             'name' => 'Truck 1',
             'current_mileage' => 100,
@@ -191,11 +231,39 @@ class VehicleInspectionTest extends TestCase
                 ...$this->postTripPayload($vehicle),
                 'damage_found' => true,
                 'damage_notes' => 'Rear door hinge is bent.',
+                'damage_photo' => UploadedFile::fake()->create('damage.jpg', 10, 'image/jpeg'),
                 '_token' => 'test-token',
             ]);
 
         $response->assertRedirect(route('dashboard'));
         $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
+        $this->assertNotNull(VehicleInspection::where('inspection_type', 'Post Trip')->firstOrFail()->damage_photo_path);
+    }
+
+    public function test_post_trip_damage_photo_is_required_when_damage_is_found(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'In Use',
+        ]);
+        VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->from(route('inspections.post'))
+            ->post(route('inspections.post.store'), [
+                ...$this->postTripPayload($vehicle),
+                'damage_found' => true,
+                'damage_notes' => 'Rear door hinge is bent.',
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.post'));
+        $response->assertSessionHasErrors('damage_photo');
     }
 
     public function test_post_trip_damage_notes_are_required_when_damage_is_found(): void

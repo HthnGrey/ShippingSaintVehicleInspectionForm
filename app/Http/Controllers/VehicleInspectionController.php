@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -98,6 +99,43 @@ class VehicleInspectionController extends Controller
         return redirect()->route('dashboard');
     }
 
+    public function edit(VehicleInspection $inspection)
+    {
+        $inspection->load(['vehicle', 'preTrip.vehicle']);
+
+        return Inertia::render('Inspections/Edit', [
+            'inspection' => $inspection,
+        ]);
+    }
+
+    public function update(Request $request, VehicleInspection $inspection): RedirectResponse
+    {
+        $data = $request->validate($this->rulesFor($inspection));
+
+        if ($inspection->inspection_type === 'Post Trip') {
+            $data['ending_mileage'] = (int) $data['ending_mileage'];
+        }
+
+        $inspection->update($data);
+
+        $this->syncVehicleAfterInspectionChange($inspection->fresh('vehicle'));
+
+        return redirect()->route('inspections.index');
+    }
+
+    public function destroy(VehicleInspection $inspection): RedirectResponse
+    {
+        $vehicle = $inspection->vehicle;
+
+        $inspection->delete();
+
+        if ($vehicle) {
+            $this->syncVehicleAfterInspectionDelete($vehicle);
+        }
+
+        return redirect()->route('inspections.index');
+    }
+
     private function vehicleForInspection(int|string $vehicleId, string $inspectionType): Vehicle
     {
         $vehicle = Vehicle::findOrFail($vehicleId);
@@ -160,5 +198,85 @@ class VehicleInspectionController extends Controller
         }
 
         return $preTrip;
+    }
+
+    private function rulesFor(VehicleInspection $inspection): array
+    {
+        $rules = [
+            'driver_name' => ['required', 'string', 'max:255'],
+            'starting_mileage' => ['required', 'integer', 'min:0'],
+            'fuel_level' => ['nullable', 'string', 'max:255'],
+            'tires_ok' => ['required', 'boolean'],
+            'lights_ok' => ['required', 'boolean'],
+            'brakes_ok' => ['required', 'boolean'],
+            'fluids_ok' => ['required', 'boolean'],
+            'damage_found' => ['required', 'boolean'],
+        ];
+
+        if ($inspection->inspection_type === 'Post Trip') {
+            $rules['ending_mileage'] = ['required', 'integer', 'gte:starting_mileage'];
+            $rules['damage_notes'] = ['required_if:damage_found,true', 'nullable', 'string'];
+        } else {
+            $rules['damage_notes'] = ['nullable', 'string'];
+        }
+
+        return $rules;
+    }
+
+    private function syncVehicleAfterInspectionChange(VehicleInspection $inspection): void
+    {
+        $vehicle = $inspection->vehicle;
+
+        if (! $vehicle) {
+            return;
+        }
+
+        if ($inspection->inspection_type === 'Post Trip') {
+            $vehicle->update([
+                'current_mileage' => $inspection->ending_mileage,
+                'status' => $this->statusAfterPostTrip($vehicle, $inspection->toArray()),
+            ]);
+
+            return;
+        }
+
+        if (! $inspection->pairedPostTrip()->exists()) {
+            $vehicle->update([
+                'status' => $inspection->damage_found ? 'Needs Maintenance' : 'In Use',
+            ]);
+        }
+    }
+
+    private function syncVehicleAfterInspectionDelete(Vehicle $vehicle): void
+    {
+        $openPreTrip = $vehicle->inspections()
+            ->where('inspection_type', 'Pre Trip')
+            ->whereDoesntHave('pairedPostTrip')
+            ->latest()
+            ->first();
+
+        if ($openPreTrip) {
+            $vehicle->update([
+                'status' => $openPreTrip->damage_found ? 'Needs Maintenance' : 'In Use',
+            ]);
+
+            return;
+        }
+
+        $latestPostTrip = $vehicle->inspections()
+            ->where('inspection_type', 'Post Trip')
+            ->latest()
+            ->first();
+
+        if ($latestPostTrip) {
+            $vehicle->update([
+                'current_mileage' => $latestPostTrip->ending_mileage,
+                'status' => $this->statusAfterPostTrip($vehicle, $latestPostTrip->toArray()),
+            ]);
+
+            return;
+        }
+
+        $vehicle->update(['status' => 'Available']);
     }
 }

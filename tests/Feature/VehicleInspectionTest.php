@@ -246,6 +246,97 @@ class VehicleInspectionTest extends TestCase
         $this->assertSame('In Use', $vehicle->fresh()->status);
     }
 
+    public function test_post_trip_inspection_can_be_updated(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'Available',
+        ]);
+        $preTrip = VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+        $postTrip = VehicleInspection::create([
+            ...$this->postTripPayload($vehicle),
+            'inspection_type' => 'Post Trip',
+            'pre_trip_inspection_id' => $preTrip->id,
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->patch(route('inspections.update', $postTrip), [
+                'driver_name' => 'Updated Driver',
+                'starting_mileage' => 100,
+                'ending_mileage' => 150,
+                'fuel_level' => '3/4',
+                'tires_ok' => true,
+                'lights_ok' => true,
+                'brakes_ok' => true,
+                'fluids_ok' => true,
+                'damage_found' => false,
+                'damage_notes' => null,
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.index'));
+        $this->assertSame('Updated Driver', $postTrip->fresh()->driver_name);
+        $this->assertSame(150, $vehicle->fresh()->current_mileage);
+        $this->assertSame('Available', $vehicle->fresh()->status);
+    }
+
+    public function test_post_trip_inspection_update_can_move_vehicle_to_maintenance_required(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'required_maintenance_mileage' => 1000,
+            'status' => 'Available',
+        ]);
+        $preTrip = VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+        $postTrip = VehicleInspection::create([
+            ...$this->postTripPayload($vehicle),
+            'inspection_type' => 'Post Trip',
+            'pre_trip_inspection_id' => $preTrip->id,
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->patch(route('inspections.update', $postTrip), [
+                ...$this->postTripPayload($vehicle),
+                'inspection_type' => 'Post Trip',
+                'tires_ok' => false,
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.index'));
+        $this->assertSame('Maintenance Required', $vehicle->fresh()->status);
+    }
+
+    public function test_inspection_can_be_deleted(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Truck 1',
+            'current_mileage' => 100,
+            'status' => 'In Use',
+        ]);
+        $preTrip = VehicleInspection::create([
+            ...$this->preTripPayload($vehicle),
+            'inspection_type' => 'Pre Trip',
+        ]);
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->delete(route('inspections.destroy', $preTrip), [
+                '_token' => 'test-token',
+            ]);
+
+        $response->assertRedirect(route('inspections.index'));
+        $this->assertNull($preTrip->fresh());
+        $this->assertSame('Available', $vehicle->fresh()->status);
+    }
+
     private function preTripPayload(Vehicle $vehicle): array
     {
         return [

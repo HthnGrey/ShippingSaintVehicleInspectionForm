@@ -100,15 +100,6 @@ watch(isDarkMode, value => {
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label class="relative block">
-                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">⌕</span>
-                    <input
-                        class="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-9 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-400 focus:ring-blue-400 sm:w-72"
-                        placeholder="Search fleet"
-                        type="search"
-                    />
-                </label>
-
                 <div class="flex items-center gap-3">
                     <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition hover:border-blue-400 hover:text-white">
                         🔔

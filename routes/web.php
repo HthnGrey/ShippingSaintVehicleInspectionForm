@@ -44,6 +44,21 @@ Route::get('/inspections/post-trip', [VehicleInspectionController::class, 'creat
 Route::post('/inspections/post-trip', [VehicleInspectionController::class, 'storePostTrip'])
     ->name('inspections.post.store');
 
+Route::get('/inspections/{inspection}/edit', [VehicleInspectionController::class, 'edit'])
+    ->name('inspections.edit');
+
+Route::patch('/inspections/{inspection}', [VehicleInspectionController::class, 'update'])
+    ->name('inspections.update');
+
+Route::delete('/inspections/{inspection}', [VehicleInspectionController::class, 'destroy'])
+    ->name('inspections.destroy');
+
+Route::patch('/reports/{maintenanceReport}', [ReportController::class, 'update'])
+    ->name('reports.update');
+
+Route::delete('/reports/{maintenanceReport}', [ReportController::class, 'destroy'])
+    ->name('reports.destroy');
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),

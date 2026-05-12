@@ -1,6 +1,6 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -25,6 +25,16 @@ function formatSubmittedAt(value) {
         dateStyle: 'short',
         timeStyle: 'short',
     }).format(new Date(value))
+}
+
+function deleteInspection(inspection) {
+    if (!window.confirm(`Remove this ${inspection.inspection_type} inspection?`)) {
+        return
+    }
+
+    router.delete(route('inspections.destroy', inspection.id), {
+        preserveScroll: true,
+    })
 }
 </script>
 
@@ -57,7 +67,17 @@ function formatSubmittedAt(value) {
 
                     <div class="grid gap-4 text-slate-300 md:grid-cols-2">
                         <section>
-                            <div class="mb-2 text-lg font-semibold text-white">Pre Trip</div>
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <div class="text-lg font-semibold text-white">Pre Trip</div>
+                                <div class="flex gap-2">
+                                    <Link :href="route('inspections.edit', inspection.id)" class="rounded-lg border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
+                                        Edit
+                                    </Link>
+                                    <button type="button" class="rounded-lg border border-red-400/40 px-3 py-1 text-xs font-semibold text-red-200 transition hover:border-red-300 hover:text-white" @click="deleteInspection(inspection)">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
                             <div>Submitted: {{ formatSubmittedAt(inspection.created_at) }}</div>
                             <div>Driver: {{ inspection.driver_name }}</div>
                             <div>Starting Mileage: {{ inspection.starting_mileage }}</div>
@@ -66,7 +86,17 @@ function formatSubmittedAt(value) {
                         </section>
 
                         <section v-if="inspection.paired_post_trip" class="border-t border-slate-800 pt-4 md:border-l md:border-t-0 md:pl-4 md:pt-0">
-                            <div class="mb-2 text-lg font-semibold text-white">Post Trip</div>
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <div class="text-lg font-semibold text-white">Post Trip</div>
+                                <div class="flex gap-2">
+                                    <Link :href="route('inspections.edit', inspection.paired_post_trip.id)" class="rounded-lg border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white">
+                                        Edit
+                                    </Link>
+                                    <button type="button" class="rounded-lg border border-red-400/40 px-3 py-1 text-xs font-semibold text-red-200 transition hover:border-red-300 hover:text-white" @click="deleteInspection(inspection.paired_post_trip)">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
                             <div>Submitted: {{ formatSubmittedAt(inspection.paired_post_trip.created_at) }}</div>
                             <div>Driver: {{ inspection.paired_post_trip.driver_name }}</div>
                             <div>Starting Mileage: {{ inspection.paired_post_trip.starting_mileage }}</div>

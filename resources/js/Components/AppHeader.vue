@@ -65,7 +65,7 @@ watch(() => page.url, () => {
                 v-for="item in navigationItems"
                 :key="item.label"
                 :href="route(item.routeName)"
-                class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-slate-800 hover:text-white"
+                class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-blue-500/15 hover:text-blue-100"
                 :class="route().current(item.active) ? 'border border-blue-400/30 bg-blue-500/15 text-blue-100 shadow-lg shadow-blue-500/10' : 'text-slate-400'"
             >
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-xs font-bold">{{ item.icon }}</span>
@@ -136,7 +136,7 @@ watch(() => page.url, () => {
                 v-for="item in navigationItems"
                 :key="item.label"
                 :href="route(item.routeName)"
-                class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-slate-800 hover:text-white"
+                class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-blue-500/15 hover:text-blue-100"
                 :class="route().current(item.active) ? 'border border-blue-400/30 bg-blue-500/15 text-blue-100 shadow-lg shadow-blue-500/10' : 'text-slate-400'"
             >
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-xs font-bold">{{ item.icon }}</span>
@@ -220,10 +220,10 @@ watch(() => page.url, () => {
                     </template>
 
                     <template #content>
-                        <Link :href="route('profile.edit')" class="block px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800 hover:text-white">
+                        <Link :href="route('profile.edit')" class="block px-4 py-2 text-sm text-slate-200 transition hover:bg-blue-500/15 hover:text-blue-100">
                             Account Settings
                         </Link>
-                        <Link :href="route('logout')" method="post" as="button" class="block w-full px-4 py-2 text-left text-sm text-slate-200 transition hover:bg-slate-800 hover:text-white">
+                        <Link :href="route('logout')" method="post" as="button" class="block w-full px-4 py-2 text-left text-sm text-slate-200 transition hover:bg-blue-500/15 hover:text-blue-100">
                             Log Out
                         </Link>
                     </template>

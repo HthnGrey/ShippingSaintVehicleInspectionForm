@@ -73,20 +73,21 @@ function formatDate(value) {
                         <p class="mt-1 text-sm text-slate-400">Calculated from completed post-trip inspections.</p>
                     </div>
 
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-col gap-2 sm:flex-row">
                         <a :href="route('exports.driver-mileage', { range: selectedRange })" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-blue-400 hover:text-white">
                             Export CSV
                         </a>
-                        <button
-                            v-for="(label, range) in filters"
-                            :key="range"
-                            type="button"
-                            class="rounded-lg border px-3 py-2 text-sm font-semibold transition"
-                            :class="selectedRange === range ? 'border-blue-400/40 bg-blue-500/15 text-blue-100' : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-blue-400 hover:text-white'"
-                            @click="changeRange(range)"
+                        <label class="sr-only" for="mileage-range">Mileage range</label>
+                        <select
+                            id="mileage-range"
+                            :value="selectedRange"
+                            class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-300 transition focus:border-blue-400 focus:ring-blue-400"
+                            @change="changeRange($event.target.value)"
                         >
-                            {{ label }}
-                        </button>
+                            <option v-for="(label, range) in filters" :key="range" :value="range">
+                                {{ label }}
+                            </option>
+                        </select>
                     </div>
                 </div>
 

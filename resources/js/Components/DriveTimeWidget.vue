@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || ''
 const startLocation = ref('')
@@ -14,6 +14,31 @@ const routeDestination = ref(null)
 const errorMessage = ref('')
 const statusMessage = ref('')
 const isLoading = ref(false)
+const viewportWidth = ref(1024)
+
+const mapImageSize = computed(() => {
+    if (viewportWidth.value < 640) {
+        return {
+            width: 640,
+            height: 640,
+            padding: 45,
+        }
+    }
+
+    if (viewportWidth.value < 1024) {
+        return {
+            width: 900,
+            height: 560,
+            padding: 60,
+        }
+    }
+
+    return {
+        width: 1000,
+        height: 360,
+        padding: 70,
+    }
+})
 
 const routeMapUrl = computed(() => {
     if (!accessToken || !routeGeometry.value || !routeOrigin.value || !routeDestination.value) {
@@ -36,8 +61,22 @@ const routeMapUrl = computed(() => {
         originMarker,
         destinationMarker,
     ].join(',')
+    const { width, height, padding } = mapImageSize.value
 
-    return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${overlays}/auto/1000x360?padding=70&access_token=${accessToken}`
+    return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${overlays}/auto/${width}x${height}?padding=${padding}&access_token=${accessToken}`
+})
+
+function updateViewportWidth() {
+    viewportWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+    updateViewportWidth()
+    window.addEventListener('resize', updateViewportWidth)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', updateViewportWidth)
 })
 
 async function geocodeAddress(address, fallbackLabel) {
@@ -207,11 +246,11 @@ async function calculateDriveTime() {
             </div>
         </div>
 
-        <div v-if="routeMapUrl" class="mt-4 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70">
+        <div v-if="routeMapUrl" class="mt-4 aspect-square overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 sm:aspect-[16/10] lg:aspect-[25/9]">
             <img
                 :src="routeMapUrl"
                 :alt="`Route map from ${startLocationLabel} to ${endLocationLabel}`"
-                class="h-72 w-full object-cover"
+                class="h-full w-full object-cover"
             />
         </div>
     </section>

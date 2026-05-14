@@ -1,8 +1,9 @@
 <script setup>
 import AppHeader from '@/Components/AppHeader.vue'
 import InputError from '@/Components/InputError.vue'
+import Modal from '@/Components/Modal.vue'
 import { router, useForm, usePage } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 defineProps({
     users: {
@@ -24,6 +25,8 @@ const form = useForm({
 })
 const page = usePage()
 const currentUserId = computed(() => page.props.auth?.user?.id)
+const userPendingDeletion = ref(null)
+const deletingUser = ref(false)
 
 function createUser() {
     form.post(route('users.store'), {
@@ -38,17 +41,37 @@ function updateRole(user, role) {
     })
 }
 
-function deleteUser(user) {
+function confirmDeleteUser(user) {
     if (user.id === currentUserId.value) {
         return
     }
 
-    if (!window.confirm(`Delete ${user.name}?`)) {
+    userPendingDeletion.value = user
+}
+
+function closeDeleteModal() {
+    if (deletingUser.value) {
         return
     }
 
-    router.delete(route('users.destroy', user.id), {
+    userPendingDeletion.value = null
+}
+
+function deleteUser() {
+    if (!userPendingDeletion.value) {
+        return
+    }
+
+    deletingUser.value = true
+
+    router.delete(route('users.destroy', userPendingDeletion.value.id), {
         preserveScroll: true,
+        onSuccess: () => {
+            userPendingDeletion.value = null
+        },
+        onFinish: () => {
+            deletingUser.value = false
+        },
     })
 }
 
@@ -141,7 +164,7 @@ function formatDate(value) {
                                         type="button"
                                         class="rounded-lg border border-red-400/40 px-3 py-2 text-sm font-semibold text-red-200 transition hover:border-red-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                                         :disabled="user.id === currentUserId"
-                                        @click="deleteUser(user)"
+                                        @click="confirmDeleteUser(user)"
                                     >
                                         Delete
                                     </button>
@@ -152,5 +175,36 @@ function formatDate(value) {
                 </div>
             </section>
         </main>
+
+        <Modal :show="Boolean(userPendingDeletion)" max-width="md" @close="closeDeleteModal">
+            <div class="bg-slate-900 p-6 text-slate-100">
+                <h2 class="text-lg font-semibold text-white">Delete user?</h2>
+
+                <p class="mt-2 text-sm text-slate-300">
+                    This will permanently delete
+                    <span class="font-semibold text-white">{{ userPendingDeletion?.name }}</span>.
+                </p>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="deletingUser"
+                        @click="closeDeleteModal"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="deletingUser"
+                        @click="deleteUser"
+                    >
+                        {{ deletingUser ? 'Deleting...' : 'Confirm Delete' }}
+                    </button>
+                </div>
+            </div>
+        </Modal>
     </div>
 </template>
